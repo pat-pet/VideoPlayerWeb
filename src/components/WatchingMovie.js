@@ -13,7 +13,7 @@ import {
   getDocs,
   addDoc,
   where,
-  setDoc,
+  onSnapshot,
 } from "firebase/firestore";
 
 function WatchingMovie() {
@@ -22,6 +22,10 @@ function WatchingMovie() {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [isUpdatingLike, setIsUpdatingLike] = useState(false);
+  const [isUpdatingDislike, setIsUpdatingDislike] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [dislikeCount, setDislikeCount] = useState(0);
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -44,42 +48,54 @@ function WatchingMovie() {
     const commentsQuery = query(
       commentsRef,
       where("content_videos", "==", doc(db, "content_videos", id)),
-      orderBy("created_at", "asc"),
-      limit(10)
+      orderBy("created_at", "asc")
     );
 
-    getDocs(commentsQuery)
-      .then((querySnapshot) => {
-        const commentList = [];
-        querySnapshot.forEach((doc) => {
-          commentList.push(doc.data());
-        });
-        setComments(commentList);
-      })
-      .catch((error) => {
-        console.error("Error getting comments: ", error);
+    const likeDislikeRef = doc(db, "content_videos", id);
+    onSnapshot(likeDislikeRef, (docSnap) => {
+      const data = docSnap.data();
+      if (data) {
+        setLikeCount(data.likes || 0);
+        setDislikeCount(data.dislikes || 0);
+      }
+    });
+
+    const unsubscribe = onSnapshot(commentsQuery, (querySnapshot) => {
+      const commentList = [];
+      querySnapshot.forEach((doc) => {
+        commentList.push(doc.data());
       });
+      setComments(commentList);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [id]);
 
   const handleLike = async () => {
-    if (movie) {
+    if (movie && !isUpdatingLike) {
+      setIsUpdatingLike(true);
       const db = getFirestore();
       const movieRef = doc(db, "content_videos", id);
       await updateDoc(movieRef, {
         likes: increment(1),
       });
-      setMovie({ ...movie, likes: movie.likes + 1 });
+      setLikeCount(likeCount + 1);
+      setIsUpdatingLike(false);
     }
   };
 
   const handleDislike = async () => {
-    if (movie) {
+    if (movie && !isUpdatingDislike) {
+      setIsUpdatingDislike(true);
       const db = getFirestore();
       const movieRef = doc(db, "content_videos", id);
       await updateDoc(movieRef, {
         dislikes: increment(1),
       });
-      setMovie({ ...movie, dislikes: movie.dislikes + 1 });
+      setDislikeCount(dislikeCount + 1);
+      setIsUpdatingDislike(false);
     }
   };
 
@@ -91,18 +107,18 @@ function WatchingMovie() {
       const commentsRef = collection(db, "comments");
 
       try {
-        await addDoc(commentsRef, {
-          content: newComment,
-          content_videos: doc(db, "content_videos", id),
-          created_at: new Date(),
-        });
+        const existingComment = comments.find(
+          (comment) => comment.content === newComment
+        );
+        if (!existingComment) {
+          await addDoc(commentsRef, {
+            content: newComment,
+            content_videos: doc(db, "content_videos", id),
+            created_at: new Date(),
+          });
 
-        setComments((prevComments) => [
-          ...prevComments,
-          { content: newComment, created_at: new Date() },
-        ]);
-
-        setNewComment("");
+          setNewComment("");
+        }
       } catch (error) {
         console.error("Error submitting comment: ", error);
       } finally {
@@ -131,10 +147,10 @@ function WatchingMovie() {
       <h2>{movie.title}</h2>
       <p>{movie.subtitle}</p>
       <p>
-        Likes: {movie.likes} <button onClick={handleLike}>Like</button>
+        Likes: {likeCount} <button onClick={handleLike}>Like</button>
       </p>
       <p>
-        Dislikes: {movie.dislikes}{" "}
+        Dislikes: {dislikeCount}{" "}
         <button onClick={handleDislike}>Dislike</button>
       </p>
       <div>
