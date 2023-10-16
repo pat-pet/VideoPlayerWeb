@@ -133,26 +133,32 @@ function WatchingMovie() {
 
   return (
     <div>
-      <button
-        onClick={() => {
-          videoRef.current.pause();
-          window.history.back();
-        }}>
-        Back
-      </button>
+      <h1 className="text-2xl font-bold pt-6 tracking-tight text-white">
+        <button
+          onClick={() => {
+            videoRef.current.pause();
+            window.history.back();
+          }}>
+          Back
+        </button>
+      </h1>
+      <div class="flex flex-row">
+        <div class="basis-3/5 mt-6 bg-[#595959] rounded-b-md">
+          <video ref={videoRef} width="100%" height="100%" controls>
+            <source src={movie.url} type="video/mp4" />
+          </video>
+          <div className="pl-4 pt-4">
+            <p className="text-lg text-white">{movie.title}</p>
+            <p className="text-sm text-white">{movie.subtitle}</p>
+          </div>
+          <div class="relative">
+            <div class="absolute right-0 h-16 w-16">09</div>
+          </div>
+        </div>
+        <div class="basis-2/5">02</div>
+      </div>
       <h1>Watching Movie</h1>
-      <video ref={videoRef} width="100%" height="100%" controls>
-        <source src={movie.url} type="video/mp4" />
-      </video>
-      <h2>{movie.title}</h2>
-      <p>{movie.subtitle}</p>
-      <p>
-        Likes: {likeCount} <button onClick={handleLike}>Like</button>
-      </p>
-      <p>
-        Dislikes: {dislikeCount}{" "}
-        <button onClick={handleDislike}>Dislike</button>
-      </p>
+
       <div>
         <input
           type="text"
