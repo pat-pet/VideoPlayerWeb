@@ -46,7 +46,7 @@ function WatchingMovie() {
     const commentsQuery = query(
       commentsRef,
       where("content_videos", "==", doc(db, "content_videos", id)),
-      orderBy("created_at", "asc")
+      orderBy("created_at", "desc")
     );
 
     const likeDislikeRef = doc(db, "content_videos", id);
@@ -114,7 +114,6 @@ function WatchingMovie() {
             content_videos: doc(db, "content_videos", id),
             created_at: new Date(),
           });
-
           setNewComment("");
         }
       } catch (error) {
